@@ -17,7 +17,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeFilter;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -54,8 +53,8 @@ public class PostcodeCheck {
     });
   }
 
-  public void loadAddresses() throws IOException {
-    CSVReader csvReader = new CSVReader(new FileReader("/Users/rvanweverwijk/Downloads/postcode_NL_head.csv"), ';', '\"');
+  public void loadAddresses(String fileName) throws IOException {
+    CSVReader csvReader = new CSVReader(new FileReader(fileName), ';', '\"');
     HashMap<String, Integer> header = convertToColumnLookup(csvReader.readNext());
 
     IndexWriterConfig config = new IndexWriterConfig(version, keywordAnalyzer)
