@@ -24,7 +24,7 @@ public class Address {
   }
 
   private void cleanUpHouseNumbers() {
-    if (StringUtils.isEmpty(this.getHouseNumber())) {
+    if (StringUtils.isEmpty(this.getHouseNumber()) && StringUtils.isNotEmpty(this.getStreet())) {
       String[] addressSplit = this.getStreet().split(" ");
       String potentialHousenumber = addressSplit[addressSplit.length - 1];
       try {
