@@ -1,6 +1,7 @@
 package net.weverwijk.address.cleaner;
 
 import lombok.Data;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 
@@ -25,7 +26,14 @@ public class Address {
   private void cleanUpHouseNumbers() {
     if (StringUtils.isEmpty(this.getHouseNumber())) {
       String[] addressSplit = this.getStreet().split(" ");
-      this.setHouseNumber(addressSplit[addressSplit.length - 1]);
+      String potentialHousenumber = addressSplit[addressSplit.length - 1];
+      try {
+        Integer.parseInt(potentialHousenumber);
+        this.setStreet(StringUtils.join(ArrayUtils.remove(addressSplit, addressSplit.length - 1), " "));
+        this.setHouseNumber(potentialHousenumber);
+      } catch (NumberFormatException nfe) {
+        // nothing to see walk through
+      }
     }
   }
 

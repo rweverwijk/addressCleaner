@@ -2,18 +2,19 @@ package net.weverwijk.address.cleaner;
 
 
 import au.com.bytecode.opencsv.CSVReader;
-import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanFilter;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -21,6 +22,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
@@ -31,10 +33,9 @@ import java.util.HashMap;
 
 public class PostcodeCheck {
 
-  private static final Version version = Version.LUCENE_36;
+  private static final Version version = Version.LUCENE_48;
   private final Directory index;
   private final KeywordAnalyzer keywordAnalyzer;
-  private IndexWriter indexWriter;
 
 
   public PostcodeCheck() {
@@ -59,20 +60,20 @@ public class PostcodeCheck {
     IndexWriterConfig config = new IndexWriterConfig(version, keywordAnalyzer)
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 
-    indexWriter = new IndexWriter(index, config);
+    IndexWriter writer = new IndexWriter(index, config);
     String[] nextLine;
     while ((nextLine = csvReader.readNext()) != null) {
       Document doc = new Document();
-      doc.add(new Field("postcode", nextLine[header.get("postcode")], Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(new Field("street", nextLine[header.get("street")], Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(new Field("city", nextLine[header.get("city")], Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(new Field("numbertype", nextLine[header.get("numbertype")], Field.Store.YES, Field.Index.ANALYZED));
-      doc.add(new NumericField("minnumber", Field.Store.YES, true).setIntValue(Integer.parseInt(nextLine[header.get("minnumber")])));
-      doc.add(new NumericField("maxnumber", Field.Store.YES, true).setIntValue(Integer.parseInt(nextLine[header.get("maxnumber")])));
-      indexWriter.addDocument(doc);
+      doc.add(new TextField("postcode", nextLine[header.get("postcode")], Field.Store.YES));
+      doc.add(new TextField("street", nextLine[header.get("street")], Field.Store.YES));
+      doc.add(new TextField("city", nextLine[header.get("city")], Field.Store.YES));
+      doc.add(new TextField("numbertype", nextLine[header.get("numbertype")], Field.Store.YES));
+      doc.add(new IntField("minnumber", Integer.parseInt(nextLine[header.get("minnumber")]), Field.Store.YES));
+      doc.add(new IntField("maxnumber", Integer.parseInt(nextLine[header.get("maxnumber")]), Field.Store.YES));
+      writer.addDocument(doc);
     }
-    indexWriter.commit();
-    indexWriter.close();
+    writer.commit();
+    writer.close();
 
   }
 
@@ -84,7 +85,7 @@ public class PostcodeCheck {
     int limit = 20;
     Address result;
 
-    try (IndexReader reader = IndexReader.open(index)) {
+    try (IndexReader reader = DirectoryReader.open(index)) {
       BooleanQuery booleanQuery = new BooleanQuery();
 
       if (address.getPostcode() != null) {
@@ -180,6 +181,11 @@ public class PostcodeCheck {
     searcher.setSimilarity(new DefaultSimilarity() {
       @Override
       public float tf(float freq) {
+        return 1.0f;
+      }
+
+      @Override
+      public float idf(long docFreq, long numDocs) {
         return 1.0f;
       }
     });
