@@ -13,11 +13,20 @@ public class Address {
   private String houseNumberAffix;
 
   public Address(String postcode, String city, String street, String houseNumber, String houseNumberAffix) {
-    this.postcode = postcode;
-    this.city = city;
-    this.street = street;
-    this.houseNumber = houseNumber;
-    this.houseNumberAffix = houseNumberAffix;
+    this.postcode = StringUtils.isNotEmpty(postcode) ? postcode.trim() : null;
+    this.city = StringUtils.isNotEmpty(city) ? city.trim() : null;
+    this.street = StringUtils.isNotEmpty(street) ? street.trim() : null;
+    this.houseNumber = StringUtils.isNotEmpty(houseNumber)? houseNumber.trim() : null;
+    this.houseNumberAffix = StringUtils.isNotEmpty(houseNumberAffix) ? houseNumberAffix.trim() : null;
+
+    this.cleanUpHouseNumbers();
+  }
+
+  private void cleanUpHouseNumbers() {
+    if (StringUtils.isEmpty(this.getHouseNumber())) {
+      String[] addressSplit = this.getStreet().split(" ");
+      this.setHouseNumber(addressSplit[addressSplit.length - 1]);
+    }
   }
 
   public Address(Document fields) {

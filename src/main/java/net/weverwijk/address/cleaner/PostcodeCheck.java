@@ -131,12 +131,7 @@ public class PostcodeCheck {
 
     }
     if (result != null) {
-      if (address.getHouseNumber() != null) {
-        result.setHouseNumber(address.getHouseNumber());
-      } else {
-        String[] addressSplit = address.getStreet().split(" ");
-        result.setHouseNumber(addressSplit[addressSplit.length - 1]);
-      }
+      result.setHouseNumber(address.getHouseNumber());
       result.setHouseNumberAffix(address.getHouseNumberAffix());
     }
     return result;
