@@ -1,12 +1,17 @@
 package net.weverwijk.address.cleaner;
 
 import lombok.Data;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 @Data
 public class Address {
+  private static final Pattern SINGLE_HOUSE_NUMBER_PATTERN = Pattern.compile("([0-9]+)([a-zA-Z]?)$");
+  private static final Pattern MULTI_HOUSE_NUMBER_PATTERN = Pattern.compile("([0-9]*[a-zA-Z]?)( en |en| - |-| & |&)([0-9]*[a-zA-Z]?)$");
+
   private String postcode;
   private String city;
   private String municipality;
@@ -14,6 +19,7 @@ public class Address {
   private String houseNumber;
   private String houseNumberAffix;
   private String description;
+
 
   public Address(String postcode, String city, String street, String houseNumber, String houseNumberAffix, String description) {
     this(postcode, city, street, houseNumber, houseNumberAffix);
@@ -39,15 +45,26 @@ public class Address {
 
   private void cleanUpHouseNumbers() {
     if (StringUtils.isEmpty(this.getHouseNumber()) && StringUtils.isNotEmpty(this.getStreet())) {
-      String[] addressSplit = this.getStreet().split(" ");
-      String potentialHousenumber = addressSplit[addressSplit.length - 1];
-      try {
-        Integer.parseInt(potentialHousenumber);
-        this.setStreet(StringUtils.join(ArrayUtils.remove(addressSplit, addressSplit.length - 1), " "));
-        this.setHouseNumber(potentialHousenumber);
-      } catch (NumberFormatException nfe) {
-        // nothing to see walk through
-      }
+      cleanupMultiHouseNumbers();
+      cleanupSingleHouseNumber();
+    }
+  }
+
+  private void cleanupSingleHouseNumber() {
+    Matcher m = SINGLE_HOUSE_NUMBER_PATTERN.matcher(street);
+    if (m.find()) {
+      street = street.replace(m.group(0), "").trim();
+      houseNumber = m.group(1);
+      houseNumberAffix = m.group(2);
+    }
+  }
+
+  protected void cleanupMultiHouseNumbers() {
+    Matcher m = MULTI_HOUSE_NUMBER_PATTERN.matcher(street);
+    if (m.find()) {
+      street = street.replace(m.group(0), "").trim();
+      houseNumber = m.group(1);
+      houseNumberAffix = m.group(3);
     }
   }
 
