@@ -140,7 +140,7 @@ public class PostcodeCheck {
         // nothing to see, walk through...
       }
 
-      if (booleanQuery.getClauses().length == 0) {
+      if (booleanQuery.getClauses().length == 0 && address.getDescription() != null) {
         QueryParser qp = new QueryParser("complete", new DutchAnalyzer());
         booleanQuery.add(qp.parse(QueryParser.escape(address.getDescription())), BooleanClause.Occur.SHOULD);
       }
