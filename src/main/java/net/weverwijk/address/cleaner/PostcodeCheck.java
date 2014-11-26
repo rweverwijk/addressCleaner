@@ -2,7 +2,11 @@ package net.weverwijk.address.cleaner;
 
 
 import au.com.bytecode.opencsv.CSVReader;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
+import org.apache.lucene.analysis.nl.DutchAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
@@ -13,6 +17,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.BooleanFilter;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -29,18 +35,20 @@ import org.apache.lucene.util.Version;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 
 public class PostcodeCheck {
 
-  private static final Version version = Version.LUCENE_48;
+  private static final Version version = Version.LUCENE_4_10_2;
   private final Directory index;
-  private final KeywordAnalyzer keywordAnalyzer;
+  private final PerFieldAnalyzerWrapper analyzer;
 
 
   public PostcodeCheck() {
     index = new RAMDirectory();
-    keywordAnalyzer = new KeywordAnalyzer();
+    analyzer = new PerFieldAnalyzerWrapper(new KeywordAnalyzer(), Collections.<String, Analyzer>singletonMap("complete", new DutchAnalyzer()));
+
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       public void run() {
@@ -57,19 +65,23 @@ public class PostcodeCheck {
     CSVReader csvReader = new CSVReader(new FileReader(fileName), ';', '\"');
     HashMap<String, Integer> header = convertToColumnLookup(csvReader.readNext());
 
-    IndexWriterConfig config = new IndexWriterConfig(version, keywordAnalyzer)
+    IndexWriterConfig config = new IndexWriterConfig(version, analyzer)
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
 
     IndexWriter writer = new IndexWriter(index, config);
     String[] nextLine;
     while ((nextLine = csvReader.readNext()) != null) {
       Document doc = new Document();
-      doc.add(new TextField("postcode", nextLine[header.get("postcode")], Field.Store.YES));
-      doc.add(new TextField("street", nextLine[header.get("street")], Field.Store.YES));
-      doc.add(new TextField("city", nextLine[header.get("city")], Field.Store.YES));
+      String postcode = nextLine[header.get("postcode")];
+      String city = nextLine[header.get("city")];
+      String street = nextLine[header.get("street")];
+      doc.add(new TextField("postcode", postcode, Field.Store.YES));
+      doc.add(new TextField("street", street, Field.Store.YES));
+      doc.add(new TextField("city", city, Field.Store.YES));
       doc.add(new TextField("numbertype", nextLine[header.get("numbertype")], Field.Store.YES));
       doc.add(new IntField("minnumber", Integer.parseInt(nextLine[header.get("minnumber")]), Field.Store.YES));
       doc.add(new IntField("maxnumber", Integer.parseInt(nextLine[header.get("maxnumber")]), Field.Store.YES));
+      doc.add(new TextField("complete", String.format("%s %s %s", postcode, street, city), Field.Store.YES));
       writer.addDocument(doc);
     }
     writer.commit();
@@ -77,11 +89,11 @@ public class PostcodeCheck {
 
   }
 
-  public Address getAddress(Address address) throws IOException {
+  public Address getAddress(Address address) throws IOException, ParseException {
     return this.getAddress(address, false);
   }
 
-  public Address getAddress(Address address, boolean debug) throws IOException {
+  public Address getAddress(Address address, boolean debug) throws IOException, ParseException {
     int limit = 20;
     Address result;
 
@@ -128,14 +140,29 @@ public class PostcodeCheck {
         // nothing to see, walk through...
       }
 
+      if (booleanQuery.getClauses().length == 0) {
+        QueryParser qp = new QueryParser("complete", new DutchAnalyzer());
+        booleanQuery.add(qp.parse(QueryParser.escape(address.getDescription())), BooleanClause.Occur.SHOULD);
+      }
+
       result = searchAddress(limit, booleanQuery, filterClauses, reader, debug, address);
 
     }
     if (result != null) {
-      result.setHouseNumber(address.getHouseNumber());
-      result.setHouseNumberAffix(address.getHouseNumberAffix());
+      addHouseNumber(address, result);
     }
     return result;
+  }
+
+  private void addHouseNumber(Address address, Address result) {
+    result.setHouseNumber(address.getHouseNumber());
+    result.setHouseNumberAffix(address.getHouseNumberAffix());
+    result.setDescription(address.getDescription());
+    if (StringUtils.isEmpty(result.getHouseNumber())) {
+      result.fillHouseNumberFromDescription();
+      // if we don't know the houseNumber we cannot know the postcode
+      result.setPostcode(null);
+    }
   }
 
   public HashMap<String, Integer> convertToColumnLookup(String[] headers) {
@@ -158,7 +185,7 @@ public class PostcodeCheck {
       printDebug(query, searcher, docs);
     }
     for (final ScoreDoc scoreDoc : docs.scoreDocs) {
-      if (lastScore == null ) {
+      if (lastScore == null) {
         lastScore = scoreDoc.score;
       } else if ((lastScore / 2) > scoreDoc.score) {
         break;
