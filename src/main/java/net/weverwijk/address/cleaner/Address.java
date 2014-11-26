@@ -9,6 +9,7 @@ import org.apache.lucene.document.Document;
 public class Address {
   private String postcode;
   private String city;
+  private String municipality;
   private String street;
   private String houseNumber;
   private String houseNumberAffix;
@@ -29,6 +30,13 @@ public class Address {
     this.cleanUpHouseNumbers();
   }
 
+  public Address(Document fields) {
+    this.postcode = fields.get("postcode");
+    this.city = fields.get("city");
+    this.street = fields.get("street");
+    this.municipality = fields.get("municipality");
+  }
+
   private void cleanUpHouseNumbers() {
     if (StringUtils.isEmpty(this.getHouseNumber()) && StringUtils.isNotEmpty(this.getStreet())) {
       String[] addressSplit = this.getStreet().split(" ");
@@ -43,17 +51,11 @@ public class Address {
     }
   }
 
-  public Address(Document fields) {
-    this.postcode = fields.get("postcode");
-    this.city = fields.get("city");
-    this.street = fields.get("street");
-//    this.houseNumber = Integer.parseInt(fields.get("houseNumber"));
-//    this.houseNumberAffix = fields.get("houseNumberAffix");
-  }
-
   public int getLevenshteinDistance(Address compareTo) {
     if (compareTo != null) {
-      return levenshteinDistance(this.city, compareTo.city) +
+      int cityDistance = levenshteinDistance(this.city, compareTo.city);
+      int municipalityDistance = levenshteinDistance(this.municipality, compareTo.city);
+      return (cityDistance < municipalityDistance ? cityDistance : municipalityDistance) +
           levenshteinDistance(this.street, compareTo.street) +
           levenshteinDistance(this.postcode, compareTo.postcode);
     }
@@ -68,21 +70,23 @@ public class Address {
   }
 
   public void fillHouseNumberFromDescription() {
-    String[] split = description.split(" ");
-    int houseNumberPosition = 1;
-    int bestLevenshteinDistance = 99;
-    for (int i = 0; i < split.length; i++) {
+    if (StringUtils.isNotBlank(description)) {
+      String[] split = description.split(" ");
+      int houseNumberPosition = 1;
+      int bestLevenshteinDistance = 99;
+      for (int i = 0; i < split.length; i++) {
         int currentDistance = levenshteinDistance(split[i], getStreet());
         if (currentDistance <= bestLevenshteinDistance) {
           bestLevenshteinDistance = currentDistance;
           houseNumberPosition = i + 1;
+        }
       }
-    }
-    try {
-      Integer.parseInt(split[houseNumberPosition]);
-      setHouseNumber(split[houseNumberPosition]);
-    } catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
-      // nothing to see...
+      try {
+        Integer.parseInt(split[houseNumberPosition]);
+        setHouseNumber(split[houseNumberPosition]);
+      } catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
+        // nothing to see...
+      }
     }
   }
 }

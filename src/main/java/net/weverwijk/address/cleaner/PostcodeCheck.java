@@ -74,14 +74,16 @@ public class PostcodeCheck {
       Document doc = new Document();
       String postcode = nextLine[header.get("postcode")];
       String city = nextLine[header.get("city")];
+      String municipality = nextLine[header.get("municipality")];
       String street = nextLine[header.get("street")];
       doc.add(new TextField("postcode", postcode, Field.Store.YES));
       doc.add(new TextField("street", street, Field.Store.YES));
       doc.add(new TextField("city", city, Field.Store.YES));
+      doc.add(new TextField("municipality", municipality, Field.Store.YES));
       doc.add(new TextField("numbertype", nextLine[header.get("numbertype")], Field.Store.YES));
       doc.add(new IntField("minnumber", Integer.parseInt(nextLine[header.get("minnumber")]), Field.Store.YES));
       doc.add(new IntField("maxnumber", Integer.parseInt(nextLine[header.get("maxnumber")]), Field.Store.YES));
-      doc.add(new TextField("complete", String.format("%s %s %s", postcode, street, city), Field.Store.YES));
+      doc.add(new TextField("complete", String.format("%s %s %s %s", postcode, street, city, municipality), Field.Store.YES));
       writer.addDocument(doc);
     }
     writer.commit();
@@ -116,6 +118,11 @@ public class PostcodeCheck {
         TermQuery cityTerm = new TermQuery(new Term("city", address.getCity()));
         cityTerm.setBoost(30F);
         booleanQuery.add(cityTerm, BooleanClause.Occur.SHOULD);
+
+        booleanQuery.add(new FuzzyQuery(new Term("municipality", address.getCity())), BooleanClause.Occur.SHOULD);
+        TermQuery municipalityTerm = new TermQuery(new Term("municipality", address.getCity()));
+        municipalityTerm.setBoost(5F);
+        booleanQuery.add(municipalityTerm, BooleanClause.Occur.SHOULD);
       }
 
       BooleanFilter filterClauses = null;
