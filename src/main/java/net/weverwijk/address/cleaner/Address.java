@@ -71,8 +71,8 @@ public class Address {
 
   public int getLevenshteinDistance(Address compareTo) {
     if (compareTo != null) {
-      int cityDistance = levenshteinDistance(this.city, compareTo.city);
-      int municipalityDistance = levenshteinDistance(this.municipality, compareTo.city);
+      int cityDistance = levenshteinDistance(this.city.toUpperCase(), compareTo.city.toUpperCase());
+      int municipalityDistance = levenshteinDistance(this.municipality.toUpperCase(), compareTo.city.toUpperCase());
       return (cityDistance < municipalityDistance ? cityDistance : municipalityDistance) +
           levenshteinDistance(this.street, compareTo.street) +
           levenshteinDistance(this.postcode, compareTo.postcode);
