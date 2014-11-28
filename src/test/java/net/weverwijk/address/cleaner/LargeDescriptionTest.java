@@ -8,7 +8,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-
+@Ignore
 public class LargeDescriptionTest {
 
   private static PostcodeCheck postcodeCheck;
@@ -19,7 +19,7 @@ public class LargeDescriptionTest {
     postcodeCheck.loadAddresses("/Users/rvanweverwijk/Downloads/postcode_NL_head.csv");
   }
 
-  @Ignore
+
   @Test
   public void testSimpleAddess() throws IOException, ParseException {
     CSVReader csvReader = new CSVReader(new InputStreamReader(PostcodeCheck.class.getClassLoader().getResourceAsStream("descriptions.csv")), '|', '\"');
