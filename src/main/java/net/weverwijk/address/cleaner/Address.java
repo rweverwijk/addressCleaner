@@ -22,14 +22,15 @@ public class Address {
   private String description;
 
 
-  public Address(String postcode, String city, String street, String houseNumber, String houseNumberAffix, String description) {
-    this(postcode, city, street, houseNumber, houseNumberAffix);
+  public Address(String postcode, String city, String municipality, String street, String houseNumber, String houseNumberAffix, String description) {
+    this(postcode, city, municipality, street, houseNumber, houseNumberAffix);
     this.description = description;
   }
 
-  public Address(String postcode, String city, String street, String houseNumber, String houseNumberAffix) {
+  public Address(String postcode, String city, String municipality, String street, String houseNumber, String houseNumberAffix) {
     this.postcode = StringUtils.isNotEmpty(postcode) ? postcode.trim() : null;
     this.city = StringUtils.isNotEmpty(city) ? city.trim() : null;
+    this.municipality = StringUtils.isNotEmpty(municipality) ? municipality.trim() : null;
     this.street = StringUtils.isNotEmpty(street) ? street.trim() : null;
     this.houseNumber = StringUtils.isNotEmpty(houseNumber) ? houseNumber.trim() : null;
     this.houseNumberAffix = StringUtils.isNotEmpty(houseNumberAffix) ? houseNumberAffix.trim() : null;
@@ -71,8 +72,8 @@ public class Address {
 
   public int getLevenshteinDistance(Address compareTo) {
     if (compareTo != null) {
-      int cityDistance = levenshteinDistance(this.city.toUpperCase(), compareTo.city.toUpperCase());
-      int municipalityDistance = levenshteinDistance(this.municipality.toUpperCase(), compareTo.city.toUpperCase());
+      int cityDistance = levenshteinDistance(this.city, compareTo.city);
+      int municipalityDistance = levenshteinDistance(this.municipality, compareTo.city);
       return (cityDistance < municipalityDistance ? cityDistance : municipalityDistance) +
           levenshteinDistance(this.street, compareTo.street) +
           levenshteinDistance(this.postcode, compareTo.postcode);
@@ -80,9 +81,9 @@ public class Address {
     return 0;
   }
 
-  private int levenshteinDistance(String from, CharSequence to) {
+  private int levenshteinDistance(String from, String to) {
     if (to != null) {
-      return StringUtils.getLevenshteinDistance(from, to);
+      return StringUtils.getLevenshteinDistance(from.toUpperCase(), to.toUpperCase());
     }
     return 0;
   }
@@ -99,12 +100,15 @@ public class Address {
           houseNumberPosition = i + 1;
         }
       }
-      Matcher m = SINGLE_HOUSE_NUMBER_PATTERN.matcher(split[houseNumberPosition]);
-      if (m.find()) {
-        houseNumber = m.group(1);
-        houseNumberAffix = m.group(2);
+      try {
+        Matcher m = SINGLE_HOUSE_NUMBER_PATTERN.matcher(split[houseNumberPosition]);
+        if (m.find()) {
+          houseNumber = m.group(1);
+          houseNumberAffix = m.group(2);
+        }
+      } catch (ArrayIndexOutOfBoundsException aiobe) {
+        // cannot find a houseNumber to bad, but not too bad
       }
-
     }
   }
 }

@@ -27,7 +27,7 @@ public class LargeDescriptionTest {
     int countRight = 0;
     String[] nextLine;
     while ((nextLine = csvReader.readNext()) != null) {
-      Address address = new Address(null, null, null, null, null, nextLine[0]);
+      Address address = new Address(null, null, null, null, null, null, nextLine[0]);
       Address foundAddress = postcodeCheck.getAddress(address);
       if (foundAddress != null) {
         System.out.println(String.format("%s\n%s -> %s -> %s\n", address.getDescription(), foundAddress.getCity(), foundAddress.getStreet(), foundAddress.getHouseNumber() ));
