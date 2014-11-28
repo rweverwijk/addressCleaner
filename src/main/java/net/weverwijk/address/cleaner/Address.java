@@ -9,8 +9,9 @@ import java.util.regex.Pattern;
 
 @Data
 public class Address {
-  private static final Pattern SINGLE_HOUSE_NUMBER_PATTERN = Pattern.compile("([0-9]+)([a-zA-Z]?)$");
-  private static final Pattern MULTI_HOUSE_NUMBER_PATTERN = Pattern.compile("([0-9]*[a-zA-Z]?)( en |en| - |-| & |&)([0-9]*[a-zA-Z]?)$");
+  private static final Pattern SINGLE_HOUSE_NUMBER_PATTERN = Pattern.compile("([0-9]+)([a-zA-Z]?)");
+  private static final Pattern SINGLE_HOUSE_NUMBER_PATTERN_AT_END_OF_LINE = Pattern.compile("([0-9]+)([a-zA-Z]?)$");
+  private static final Pattern MULTI_HOUSE_NUMBER_PATTERN_AT_END_OF_LINE = Pattern.compile("([0-9]*[a-zA-Z]?)( en |en| - |-| & |&)([0-9]*[a-zA-Z]?)$");
 
   private String postcode;
   private String city;
@@ -51,7 +52,7 @@ public class Address {
   }
 
   private void cleanupSingleHouseNumber() {
-    Matcher m = SINGLE_HOUSE_NUMBER_PATTERN.matcher(street);
+    Matcher m = SINGLE_HOUSE_NUMBER_PATTERN_AT_END_OF_LINE.matcher(street);
     if (m.find()) {
       street = street.replace(m.group(0), "").trim();
       houseNumber = m.group(1);
@@ -60,7 +61,7 @@ public class Address {
   }
 
   protected void cleanupMultiHouseNumbers() {
-    Matcher m = MULTI_HOUSE_NUMBER_PATTERN.matcher(street);
+    Matcher m = MULTI_HOUSE_NUMBER_PATTERN_AT_END_OF_LINE.matcher(street);
     if (m.find()) {
       street = street.replace(m.group(0), "").trim();
       houseNumber = m.group(1);
@@ -98,12 +99,12 @@ public class Address {
           houseNumberPosition = i + 1;
         }
       }
-      try {
-        Integer.parseInt(split[houseNumberPosition]);
-        setHouseNumber(split[houseNumberPosition]);
-      } catch (ArrayIndexOutOfBoundsException | NumberFormatException e) {
-        // nothing to see...
+      Matcher m = SINGLE_HOUSE_NUMBER_PATTERN.matcher(split[houseNumberPosition]);
+      if (m.find()) {
+        houseNumber = m.group(1);
+        houseNumberAffix = m.group(2);
       }
+
     }
   }
 }

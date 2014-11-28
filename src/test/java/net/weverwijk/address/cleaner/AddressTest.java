@@ -16,6 +16,14 @@ public class AddressTest {
   }
 
   @Test
+  public void testFillHouseNumberWithAffixFromDescription() {
+    Address address = new Address(null, null, "Milhezerweg", null, null, "Milhezerweg 55b te Deurne");
+    address.fillHouseNumberFromDescription();
+    assertEquals("55", address.getHouseNumber());
+    assertEquals("b", address.getHouseNumberAffix());
+  }
+
+  @Test
   public void testCleanupMultipleAddresses() {
     ArrayList<String[]> testValues = new ArrayList<String[]>();
     testValues.add(new String[]{"Eikenlaan 31 en 33", "Eikenlaan", "31", "33"});
