@@ -118,9 +118,10 @@ public class PostcodeCheck {
         TermQuery cityTerm = new TermQuery(new Term("city", address.getCity()));
         cityTerm.setBoost(30F);
         booleanQuery.add(cityTerm, BooleanClause.Occur.SHOULD);
-
-        booleanQuery.add(new FuzzyQuery(new Term("municipality", address.getCity())), BooleanClause.Occur.SHOULD);
-        TermQuery municipalityTerm = new TermQuery(new Term("municipality", address.getCity()));
+      }
+      if (address.getMunicipality() != null ) {
+        booleanQuery.add(new FuzzyQuery(new Term("municipality", address.getMunicipality())), BooleanClause.Occur.SHOULD);
+        TermQuery municipalityTerm = new TermQuery(new Term("municipality", address.getMunicipality()));
         municipalityTerm.setBoost(5F);
         booleanQuery.add(municipalityTerm, BooleanClause.Occur.SHOULD);
       }
