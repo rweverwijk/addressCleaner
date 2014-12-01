@@ -4,7 +4,6 @@ package net.weverwijk.address.cleaner;
 import au.com.bytecode.opencsv.CSVReader;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.nl.DutchAnalyzer;
 import org.apache.lucene.document.Document;
@@ -26,7 +25,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
@@ -35,7 +33,6 @@ import org.apache.lucene.util.Version;
 
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 
 public class PostcodeCheck {
@@ -47,7 +44,9 @@ public class PostcodeCheck {
 
   public PostcodeCheck() {
     index = new RAMDirectory();
-    analyzer = new PerFieldAnalyzerWrapper(new KeywordAnalyzer(), Collections.<String, Analyzer>singletonMap("complete", new DutchAnalyzer()));
+    HashMap<String, Analyzer> analyzers = new HashMap<>();
+    analyzers.put("complete", new DutchAnalyzer());
+    analyzer = new PerFieldAnalyzerWrapper(new LowerCaseKeywordAnalyzer(), analyzers);
 
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -103,41 +102,39 @@ public class PostcodeCheck {
       BooleanQuery booleanQuery = new BooleanQuery();
 
       if (address.getPostcode() != null) {
-        Query postcode = new TermQuery(new Term("postcode", address.getPostcode()));
+        Query postcode = new LowerCaseTermQuery(new Term("postcode", address.getPostcode()));
         postcode.setBoost(20F);
         booleanQuery.add(postcode, BooleanClause.Occur.SHOULD);
       }
       if (address.getStreet() != null) {
-        TermQuery streetTerm = new TermQuery(new Term("street", address.getStreet()));
+        LowerCaseTermQuery streetTerm = new LowerCaseTermQuery(new Term("street", address.getStreet()));
         streetTerm.setBoost(30F);
         booleanQuery.add(streetTerm, BooleanClause.Occur.SHOULD);
         booleanQuery.add(new FuzzyQuery(new Term("street", address.getStreet())), BooleanClause.Occur.SHOULD);
       }
       if (address.getCity() != null) {
         booleanQuery.add(new FuzzyQuery(new Term("city", address.getCity())), BooleanClause.Occur.SHOULD);
-        TermQuery cityTerm = new TermQuery(new Term("city", address.getCity()));
+        LowerCaseTermQuery cityTerm = new LowerCaseTermQuery(new Term("city", address.getCity()));
         cityTerm.setBoost(30F);
         booleanQuery.add(cityTerm, BooleanClause.Occur.SHOULD);
       }
       if (address.getMunicipality() != null ) {
         booleanQuery.add(new FuzzyQuery(new Term("municipality", address.getMunicipality())), BooleanClause.Occur.SHOULD);
-        TermQuery municipalityTerm = new TermQuery(new Term("municipality", address.getMunicipality()));
+        LowerCaseTermQuery municipalityTerm = new LowerCaseTermQuery(new Term("municipality", address.getMunicipality()));
         municipalityTerm.setBoost(5F);
         booleanQuery.add(municipalityTerm, BooleanClause.Occur.SHOULD);
       }
 
-      BooleanFilter filterClauses = null;
       try {
         if (address.getHouseNumber() != null) {
-//          filterClauses = new BooleanFilter();
           int houseNumber = Integer.parseInt(address.getHouseNumber());
 
           BooleanQuery oddEvenQuery = new BooleanQuery();
-          oddEvenQuery.add(new TermQuery(new Term("numbertype", "mixed")), BooleanClause.Occur.SHOULD);
+          oddEvenQuery.add(new LowerCaseTermQuery(new Term("numbertype", "mixed")), BooleanClause.Occur.SHOULD);
           if (houseNumber % 2 == 0) {
-            oddEvenQuery.add(new TermQuery(new Term("numbertype", "even")), BooleanClause.Occur.SHOULD);
+            oddEvenQuery.add(new LowerCaseTermQuery(new Term("numbertype", "even")), BooleanClause.Occur.SHOULD);
           } else {
-            oddEvenQuery.add(new TermQuery(new Term("numbertype", "odd")), BooleanClause.Occur.SHOULD);
+            oddEvenQuery.add(new LowerCaseTermQuery(new Term("numbertype", "odd")), BooleanClause.Occur.SHOULD);
 
           }
           booleanQuery.add(oddEvenQuery, BooleanClause.Occur.MUST);
@@ -148,12 +145,12 @@ public class PostcodeCheck {
         // nothing to see, walk through...
       }
 
-      if (booleanQuery.getClauses().length < 2 && StringUtils.isNotBlank(address.getDescription())) {
+      if (booleanQuery.getClauses().length < 3 && StringUtils.isNotBlank(address.getDescription())) {
         QueryParser qp = new QueryParser("complete", new DutchAnalyzer());
         booleanQuery.add(qp.parse(QueryParser.escape(address.getDescription())), BooleanClause.Occur.SHOULD);
       }
 
-      result = searchAddress(limit, booleanQuery, filterClauses, reader, debug, address);
+      result = searchAddress(limit, booleanQuery, null, reader, debug, address);
 
     }
     if (result != null) {
