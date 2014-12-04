@@ -46,6 +46,7 @@ public class PostcodeCheck {
     index = new RAMDirectory();
     HashMap<String, Analyzer> analyzers = new HashMap<>();
     analyzers.put("complete", new DutchAnalyzer());
+    analyzers.put("streetAnalyzed", new DutchAnalyzer());
     analyzer = new PerFieldAnalyzerWrapper(new LowerCaseKeywordAnalyzer(), analyzers);
 
 
@@ -77,6 +78,7 @@ public class PostcodeCheck {
       String street = nextLine[header.get("street")];
       doc.add(new TextField("postcode", postcode, Field.Store.YES));
       doc.add(new TextField("street", street, Field.Store.YES));
+      doc.add(new TextField("streetAnalyzed", street, Field.Store.YES));
       doc.add(new TextField("city", city, Field.Store.YES));
       doc.add(new TextField("municipality", municipality, Field.Store.YES));
       doc.add(new TextField("numbertype", nextLine[header.get("numbertype")], Field.Store.YES));
@@ -111,6 +113,9 @@ public class PostcodeCheck {
         streetTerm.setBoost(30F);
         booleanQuery.add(streetTerm, BooleanClause.Occur.SHOULD);
         booleanQuery.add(new FuzzyQuery(new Term("street", address.getStreet())), BooleanClause.Occur.SHOULD);
+
+        QueryParser qp = new QueryParser("streetAnalyzed", new DutchAnalyzer());
+        booleanQuery.add(qp.parse(QueryParser.escape(address.getStreet())), BooleanClause.Occur.SHOULD);
       }
       if (address.getCity() != null) {
         booleanQuery.add(new FuzzyQuery(new Term("city", address.getCity())), BooleanClause.Occur.SHOULD);
@@ -145,7 +150,7 @@ public class PostcodeCheck {
         // nothing to see, walk through...
       }
 
-      if (booleanQuery.getClauses().length < 3 && StringUtils.isNotBlank(address.getDescription())) {
+      if (StringUtils.isNotBlank(address.getDescription())) {
         QueryParser qp = new QueryParser("complete", new DutchAnalyzer());
         booleanQuery.add(qp.parse(QueryParser.escape(address.getDescription())), BooleanClause.Occur.SHOULD);
       }
