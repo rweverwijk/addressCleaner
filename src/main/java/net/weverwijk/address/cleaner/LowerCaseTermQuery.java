@@ -5,6 +5,6 @@ import org.apache.lucene.search.TermQuery;
 
 public class LowerCaseTermQuery extends TermQuery {
   public LowerCaseTermQuery(Term t) {
-    super(new Term(t.field(),t.text().toLowerCase()));
+    super(new Term(t.field(), t.text().toLowerCase()));
   }
 }

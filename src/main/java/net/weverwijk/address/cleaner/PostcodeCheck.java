@@ -26,7 +26,6 @@ import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
@@ -48,7 +47,6 @@ public class PostcodeCheck {
     analyzers.put("complete", new DutchAnalyzer());
     analyzers.put("streetAnalyzed", new DutchAnalyzer());
     analyzer = new PerFieldAnalyzerWrapper(new LowerCaseKeywordAnalyzer(), analyzers);
-
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       public void run() {
@@ -123,7 +121,7 @@ public class PostcodeCheck {
         cityTerm.setBoost(30F);
         booleanQuery.add(cityTerm, BooleanClause.Occur.SHOULD);
       }
-      if (address.getMunicipality() != null ) {
+      if (address.getMunicipality() != null) {
         booleanQuery.add(new FuzzyQuery(new Term("municipality", address.getMunicipality())), BooleanClause.Occur.SHOULD);
         LowerCaseTermQuery municipalityTerm = new LowerCaseTermQuery(new Term("municipality", address.getMunicipality()));
         municipalityTerm.setBoost(5F);
@@ -156,7 +154,6 @@ public class PostcodeCheck {
       }
 
       result = searchAddress(limit, booleanQuery, null, reader, debug, address);
-
     }
     if (result != null) {
       addHouseNumber(address, result);
@@ -189,7 +186,6 @@ public class PostcodeCheck {
     Float lastScore = null;
 
     IndexSearcher searcher = new IndexSearcher(reader);
-//    resetIDF(searcher);
     TopDocs docs = searcher.search(query, filterClauses, limit);
     if (debug) {
       printDebug(query, searcher, docs);
@@ -212,20 +208,6 @@ public class PostcodeCheck {
       }
     }
     return result;
-  }
-
-  private void resetIDF(IndexSearcher searcher) {
-    searcher.setSimilarity(new DefaultSimilarity() {
-      @Override
-      public float tf(float freq) {
-        return 1.0f;
-      }
-
-      @Override
-      public float idf(long docFreq, long numDocs) {
-        return 1.0f;
-      }
-    });
   }
 
   private void printDebug(Query query, IndexSearcher searcher, TopDocs docs) throws IOException {
