@@ -50,15 +50,7 @@ public class Address {
       cleanupMultiHouseNumbers();
       cleanupSingleHouseNumber();
     }
-  }
-
-  private void cleanupSingleHouseNumber() {
-    Matcher m = SINGLE_HOUSE_NUMBER_PATTERN_AT_END_OF_LINE.matcher(street);
-    if (m.find()) {
-      street = street.replace(m.group(0), "").trim();
-      houseNumber = m.group(1);
-      houseNumberAffix = m.group(2);
-    }
+    //TODO add cleanup for houseNumberAffix
   }
 
   protected void cleanupMultiHouseNumbers() {
@@ -67,6 +59,15 @@ public class Address {
       street = street.replace(m.group(0), "").trim();
       houseNumber = m.group(1);
       houseNumberAffix = m.group(3);
+    }
+  }
+
+  private void cleanupSingleHouseNumber() {
+    Matcher m = SINGLE_HOUSE_NUMBER_PATTERN_AT_END_OF_LINE.matcher(street);
+    if (m.find()) {
+      street = street.replace(m.group(0), "").trim();
+      houseNumber = m.group(1);
+      houseNumberAffix = m.group(2);
     }
   }
 
