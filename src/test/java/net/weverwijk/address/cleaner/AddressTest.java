@@ -62,4 +62,18 @@ public class AddressTest {
     assertEquals("Eikenlaan", address.getStreet());
   }
 
+  @Test
+  public void testCleanupSpecialCharactersFromAffix() {
+    ArrayList<String[]> testValues = new ArrayList<String[]>();
+    testValues.add(new String[]{"Eikenlaan", "31", "-32", "Eikenlaan", "31", "32"});
+    testValues.add(new String[]{"Eikenlaan", "31", "/32", "Eikenlaan", "31", "32"});
+    testValues.add(new String[]{"Eikenlaan", "31", "+32", "Eikenlaan", "31", "32"});
+    for (String[] testValue : testValues) {
+      Address address = new Address(null, null, null, testValue[0], testValue[1], testValue[2]);
+      assertEquals(testValue[3], address.getStreet());
+      assertEquals(testValue[4], address.getHouseNumber());
+      assertEquals(testValue[5], address.getHouseNumberAffix());
+    }
+  }
+
 }

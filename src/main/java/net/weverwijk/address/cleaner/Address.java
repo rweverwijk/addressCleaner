@@ -33,7 +33,7 @@ public class Address {
     this.municipality = StringUtils.isNotEmpty(municipality) ? municipality.trim() : null;
     this.street = StringUtils.isNotEmpty(street) ? street.trim() : null;
     this.houseNumber = StringUtils.isNotEmpty(houseNumber) ? houseNumber.trim() : null;
-    this.houseNumberAffix = StringUtils.isNotEmpty(houseNumberAffix) ? houseNumberAffix.trim() : null;
+    this.houseNumberAffix = StringUtils.isNotEmpty(houseNumberAffix) ? houseNumberAffix.trim().replaceFirst("^[/+-]", "") : null;
 
     this.cleanUpHouseNumbers();
   }
@@ -50,7 +50,6 @@ public class Address {
       cleanupMultiHouseNumbers();
       cleanupSingleHouseNumber();
     }
-    //TODO add cleanup for houseNumberAffix
   }
 
   protected void cleanupMultiHouseNumbers() {
