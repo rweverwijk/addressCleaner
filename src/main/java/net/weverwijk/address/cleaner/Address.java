@@ -4,6 +4,7 @@ import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.document.Document;
 
+import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,13 +30,21 @@ public class Address {
 
   public Address(String postcode, String city, String municipality, String street, String houseNumber, String houseNumberAffix) {
     this.postcode = StringUtils.isNotEmpty(postcode) ? postcode.trim() : null;
-    this.city = StringUtils.isNotEmpty(city) ? city.trim() : null;
-    this.municipality = StringUtils.isNotEmpty(municipality) ? municipality.trim() : null;
+    this.city = StringUtils.isNotEmpty(city) ? checkAndReplaceWithSynonym(city.trim()) : null;
+    this.municipality = StringUtils.isNotEmpty(municipality) ? checkAndReplaceWithSynonym(municipality.trim()) : null;
     this.street = StringUtils.isNotEmpty(street) ? street.trim() : null;
     this.houseNumber = StringUtils.isNotEmpty(houseNumber) ? houseNumber.trim() : null;
     this.houseNumberAffix = StringUtils.isNotEmpty(houseNumberAffix) ? houseNumberAffix.trim().replaceFirst("^[/+-]", "") : null;
 
     this.cleanUpHouseNumbers();
+  }
+
+  private String checkAndReplaceWithSynonym(String city) {
+    if (city == null) { return city;}
+    if (Address.citySynonyms.containsKey(city.toLowerCase())) {
+      return Address.citySynonyms.get(city);
+    }
+    return city;
   }
 
   public Address(Document fields) {
@@ -111,4 +120,39 @@ public class Address {
       }
     }
   }
+
+  private static HashMap<String,String> citySynonyms = new HashMap<>();
+
+  static {
+    citySynonyms.put("den haag", "'s-Gravenhage");
+    citySynonyms.put("denhaag", "'s-Gravenhage");
+    citySynonyms.put("leidseveen den haag", "'s-Gravenhage");
+    citySynonyms.put("den haag/ypenburg", "'s-Gravenhage");
+    citySynonyms.put("loosduinen/den haag", "'s-Gravenhage");
+    citySynonyms.put("den haag-leidschenveen", "'s-Gravenhage");
+    citySynonyms.put("' hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("' s hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'-hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s- hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s--hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s-bosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s-hertgoenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s-hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s-hertogrnbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s-hertogtenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s-hetogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'shertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("'s-hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("den bosch", "'s-Hertogenbosch");
+    citySynonyms.put("s hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("s' hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("s'-hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("s'hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("s-hertogenbosch", "'s-Hertogenbosch");
+    citySynonyms.put("`s-hertogenbosch", "'s-Hertogenbosch");
+  }
+
 }
