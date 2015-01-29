@@ -46,7 +46,7 @@ public class PostcodeCheck {
     HashMap<String, Analyzer> analyzers = new HashMap<>();
     analyzers.put("complete", new DutchAnalyzer());
     analyzers.put("streetAnalyzed", new DutchAnalyzer());
-    analyzer = new PerFieldAnalyzerWrapper(new LowerCaseKeywordAnalyzer(), analyzers);
+    analyzer = new PerFieldAnalyzerWrapper(new SimpleLowerCaseKeywordAnalyzer(), analyzers);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       public void run() {
